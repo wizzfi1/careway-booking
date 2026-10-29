@@ -215,6 +215,7 @@ h1 > span {
   align-items: start;
 }
 .panel {
+  min-width: 0;
   background: white;
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -772,7 +773,7 @@ footer > span:last-child {
     font-size: 9px;
   }
   .booking-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .schedule,
   .details {
