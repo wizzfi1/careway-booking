@@ -70,7 +70,7 @@ export default function Home() {
       setDraftKey(saved);
     }
   }, []);
-  async function api(path: string, options: RequestInit = {}, key = apiKey) {
+  async function api<T>(path: string, options: RequestInit = {}, key = apiKey): Promise<T> {
     const response = await fetch(path, {
       ...options,
       headers: {
@@ -79,22 +79,22 @@ export default function Home() {
         ...options.headers,
       },
     });
-    const data = await response.json();
+    const data: unknown = await response.json();
     if (!response.ok)
       throw Object.assign(
         new Error(
           response.status === 429
             ? `Please wait ${response.headers.get("Retry-After") || "60"} seconds before trying again.`
-            : data.error || "Something went wrong. Please try again.",
+            : (data as {error?: string}).error || "Something went wrong. Please try again.",
         ),
         { status: response.status },
       );
-    return data;
+    return data as T;
   }
   async function loadSlots() {
     setLoading(true);
     try {
-      const data = await api("/slots");
+      const data = await api<{slots: Slot[]}>("/slots");
       setSlots(data.slots);
     } catch (e) {
       setNotice((e as Error).message);
@@ -117,7 +117,7 @@ export default function Home() {
     setBusy(true);
     setNotice("");
     try {
-      const data = await api("/slots", {}, draftKey.trim());
+      const data = await api<{slots: Slot[]}>("/slots", {}, draftKey.trim());
       sessionStorage.setItem("careway-key", draftKey.trim());
       setApiKey(draftKey.trim());
       setSlots(data.slots);
@@ -137,7 +137,7 @@ export default function Home() {
     if (pending.current?.body !== body)
       pending.current = { body, key: crypto.randomUUID() };
     try {
-      const result = await api("/bookings", {
+      const result = await api<Booking>("/bookings", {
         method: "POST",
         body,
         headers: { "Idempotency-Key": pending.current!.key },
@@ -160,7 +160,7 @@ export default function Home() {
     setBusy(true);
     setNotice("");
     try {
-      const data = await api(
+      const data = await api<{bookings: Booking[]; next_cursor: string | null}>(
         `/bookings?email=${encodeURIComponent(email)}&limit=5${next && cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
       );
       setBookings(next ? [...bookings, ...data.bookings] : data.bookings);
@@ -177,7 +177,7 @@ export default function Home() {
     setBusy(true);
     setNotice("");
     try {
-      const result = await api(
+      const result = await api<Booking>(
         `/bookings/${encodeURIComponent(cancelTarget.id)}`,
         { method: "DELETE" },
       );
